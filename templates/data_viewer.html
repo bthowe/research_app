@@ -1,0 +1,193 @@
+{% import "bootstrap/wtf.html" as wtf %}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <!-- Latest compiled and minified CSS -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
+
+    <!-- jQuery library -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+
+    <!-- Popper JS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"></script>
+
+    <!-- Latest compiled JavaScript -->
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
+</head>
+
+<body>
+
+    <div class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main" id="main">
+        <div class="row" id="dropDownRow">
+            <div class="col-3">
+                <label for="choose_col">Collection</label>
+                <select id="choose_col" class="form-control" onchange=collectionAutoFill()>
+                    <option selected>Choose...</option>
+                    <option>Data</option>
+                    <option>Summary</option>
+                </select>
+            </div>
+        </div>
+        <div class="row" id="buttonRow"></div>
+        <div class="row" id="tableRow"></div>
+    </div>
+
+<script>
+    document.getElementById('choose_col').focus();
+
+    function clearDivs(submitBool) {
+        if (!submitBool)
+        {
+            if (document.getElementById('submit')) {
+                document.getElementById('submit').remove();
+                document.getElementById('dropDownDiv').remove();
+                document.getElementById('textFieldDiv').remove();
+                document.getElementById('buttonDiv').remove();
+            }
+        }
+        if (document.getElementById('table_div')) {
+            document.getElementById('table_div').remove();
+        }
+    }
+
+    function collectionAutoFill() {
+        clearDivs(false);
+        var dbs_e = document.getElementById("choose_col");
+        if (dbs_e.value != "0") {
+            dbs = dbs_e.options[dbs_e.selectedIndex].text;
+
+            if (dbs == "Data"){
+                textFieldCreate();
+                buttonCreate();
+            }
+            else{
+                textFieldCreate();
+                buttonCreate();
+            }
+        }
+    }
+
+    function textFieldCreate() {
+        var input = document.createElement('input');
+        input.id = 'date_input';
+        input.className = 'form-control';
+        input.placeholder = 'yyyy-mm-dd';
+
+        var label = document.createElement('Label');
+        label.id = 'date_label';
+        label.setAttribute("for", 'date_input');
+        label.innerHTML = 'Date (leave blank for all rows)';
+
+        var dropdownrow = document.getElementById('dropDownRow');
+        var dropdowndiv = document.createElement('div');
+        dropdowndiv.id = 'textFieldDiv';
+        dropdowndiv.className = 'col-3';
+
+        dropdowndiv.appendChild(label);
+        dropdowndiv.appendChild(input);
+        dropdownrow.appendChild(dropdowndiv);
+    }
+
+    function buttonCreate() {
+        var button = document.createElement('button');
+        button.id = 'submit';
+        button.className = 'btn btn-primary';
+        button.innerHTML = 'Submit';
+        button.onclick = function() {
+            var col_e = document.getElementById("choose_col");
+
+            var request = new XMLHttpRequest();
+            request.responseType = 'json';
+            request.open("POST", "/query_db", true);
+            request.onload = function () {
+                clearDivs(true);
+                var dbs_details = JSON.parse(JSON.stringify(request.response))['items'];
+                tableCreate(dbs_details);
+                document.getElementById('choose_col').focus();
+            };
+            request.send(JSON.stringify(
+                {
+                    "collection": col_e.options[col_e.selectedIndex].text,
+                    "date": date_input.value
+                }
+                )
+            );
+
+        };
+
+        var buttonrow = document.getElementById('buttonRow');
+        var buttondiv = document.createElement('div');
+        buttondiv.id = 'buttonDiv';
+        buttondiv.className = 'col pt-4 pb-4';
+
+        buttondiv.appendChild(button);
+        buttonrow.appendChild(buttondiv);
+    }
+
+    function tableCreate(dbs_details) {
+        var table_div = document.createElement('div');
+        table_div.id = 'table_div';
+        table_div.className = 'col table-responsive';
+
+        var table = document.createElement('table');
+        table.className = "table table-striped table-bordered";
+        var thead = document.createElement('thead');
+        thead.className = "thead-dark";
+
+        var tr = document.createElement('tr');
+        tr.className = "d-flex";
+
+        var th = document.createElement('th');
+        th.scope = 'col';
+        th.innerText = "#";
+        th.setAttribute("style", "width:50px;");
+        tr.appendChild(th);
+
+        for (var k in dbs_details[0]) {
+            var th = document.createElement('th');
+            th.scope = 'col';
+            th.innerText = k;
+            th.setAttribute("style", "width:305px;");
+            tr.appendChild(th);
+        }
+        thead.appendChild(tr);
+        table.appendChild(thead);
+
+        var tbody = document.createElement('tbody');
+        for (var i = 0; i < dbs_details.length; i++) {
+            tr = document.createElement('tr');
+            tr.className = "d-flex";
+            var th = document.createElement('th');
+            th.scope = 'row';
+            th.innerHTML = i + 1;
+            th.setAttribute("style", "width:50px;");
+            tr.appendChild(th);
+
+            for (var k in dbs_details[i]) {
+                var td = document.createElement('td');
+                td.setAttribute("style", "width:305px;");
+
+                td_div = document.createElement('div');
+                td_div.setAttribute("style", "word-break:break-all;");
+                td_div.innerHTML = dbs_details[i][k];
+
+                td.appendChild(td_div);
+                tr.appendChild(td);
+            }
+            tbody.appendChild(tr);
+        }
+
+        table.appendChild(tbody);
+        table_div.appendChild(table);
+        document.getElementById('tableRow').appendChild(table_div)
+    }
+
+
+</script>
+</div>
+</body>
+
+</html>
+

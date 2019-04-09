@@ -1,0 +1,128 @@
+{% import "bootstrap/wtf.html" as wtf %}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <!-- Latest compiled and minified CSS -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
+
+    <!-- jQuery library -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+
+    <!-- Popper JS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"></script>
+
+    <!-- Latest compiled JavaScript -->
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
+</head>
+
+<body>
+<div class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main">
+    <form method="POST" action="/summary">
+        <div class="row">
+            <div class="form-group col-md-12">
+                <label for="citation"><h4>Citation</h4></label>
+                <input type="text" class="form-control" id="citation" name="Citation">
+            </div>
+        </div>
+        <div class="row">
+            <div class="form-group col-md-12">
+                <label for="objective"><h4>Objective</h4></label>
+                <input type="text" class="form-control" id="objective" name="Objective">
+            </div>
+        </div>
+        <div class="form-group">
+            <label for="t_model"><h4>Description of Theoretical Model</h4></label>
+            <textarea class="form-control" id="t_model" name="Theoretical Model" rows="3"></textarea>
+        </div>
+        <div class="form-group">
+            <label for="e_model"><h4>Description of Empirical Approach</h4></label>
+            <textarea class="form-control" id="e_model" name="Empirical Approach" rows="3"></textarea>
+        </div>
+        <div class="form-row">
+            <div class="col-12" id="DataDiv">
+                <div class="row">
+                    <div class="col">
+                        <h4>Data</h4>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="form-group col-md-4">
+                        <label for='data_source0'>Data Source</label>
+                        <input type='text' id='data_source0' name='Data_source0' class='form-control'>
+                    </div>
+                    <div class="form-group col-md-4">
+                        <label for='outcomes0'>Outcomes</label>
+                        <input type='text' id='outcomes0' name='Outcomes0' class='form-control'>
+                    </div>
+                    <div class="form-group col-md-4">
+                        <label for='covariates0'>Covariates</label>
+                        <input type='text' id='covariates0' name='Covariates0' class='form-control'>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="col-md-auto pt-2">
+                <button type="button" class="btn btn-primary" onclick="MoreData()">+</button>
+            </div>
+        </div>
+        <div class="form-group pt-4">
+            <label for="conclusions"><h4>Conclusions</h4></label>
+            <textarea class="form-control" id="conclusions" name="Conclusions" rows="3"></textarea>
+        </div>
+        <div class="form-row">
+            <div class="col-md-auto pt-2">
+                <input class="btn btn-primary" id="submit" type="submit"/>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="col-md-auto pt-2">
+                <p>Notes: (b) denotes a binary variable</p>
+            </div>
+        </div>
+
+    </form>
+    <script>
+    var data_count = 1;
+
+    document.getElementById('citation').focus();
+
+    function MoreData() {
+        var DataDiv = document.getElementById('DataDiv')
+
+        var data_row = document.createElement('div');
+        data_row.className = "row";
+        data_row.id = 'DataDiv' + data_count
+
+        var data_source_div = document.createElement('div');
+        data_source_div.className = "form-group col-md-4";
+        data_source_div.innerHTML = "<label for='data_source" + data_count + "'>Data Source</label><input type='text' id='data_source" + data_count + "' name='Data_source" + data_count +"' class='form-control'>"
+
+        var outcomes_div = document.createElement('div');
+        outcomes_div.className = "form-group col-md-4";
+        outcomes_div.innerHTML = "<label for='outcomes" + data_count + "'>Outcomes</label><input type='text' id='outcomes" + data_count + "' name='Outcomes" + data_count + "' class='form-control'>"
+
+        var covariates_div = document.createElement('div');
+        covariates_div.className = "form-group col-md-4";
+        covariates_div.innerHTML = "<label for='covariates" + data_count + "'>Covariates</label><input type='text' id='covariates" + data_count + "' name='Covariates" + data_count + "' class='form-control'>"
+
+        data_row.appendChild(data_source_div)
+        data_row.appendChild(outcomes_div)
+        data_row.appendChild(covariates_div)
+        DataDiv.appendChild(data_row)
+
+        document.getElementById('data_source' + data_count).focus();
+        data_count += 1;
+
+    }
+
+
+
+
+</script>
+</div>
+</body>
+
+</html>
