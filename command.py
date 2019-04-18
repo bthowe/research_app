@@ -3,7 +3,7 @@ import json
 import datetime
 import subprocess
 import pandas as pd
-from flask_pymongo import PyMongo
+from flask_pymongo import PyMongo, ObjectId
 from flask_bootstrap import Bootstrap
 from flask import Flask, render_template, url_for, request, redirect, jsonify
 
@@ -64,6 +64,17 @@ def datasets():
 def database_viewer():
     return render_template('data_viewer.html', page_name='Table Viewer')
 
+@app.route('/document_view', methods=['POST'])
+def document_view():
+    form = request.form
+
+    document = document_json(form)
+
+    if form['collection'] == 'Data':
+        return render_template('data_document_view.html', doc=document, page_name='Document View')
+    else:
+        return render_template('summary_document_view.html', doc=document, page_name='Document View')
+
 @app.route('/quit')
 def quit():
     sys.exit(4)
@@ -78,10 +89,60 @@ def query_db():
     collection = js['collection'].lower()
 
     docs = []
-    docs += list(db_papers.db[collection].find({}, {'_id': False}))
+    docs += list(db_papers.db[collection].find({}))
 
     return jsonify(items=[{str(k): str(v) for k, v in doc.items()} for doc in docs])
 
+
+@app.route('/update_db', methods=['POST'])
+def update_db():
+    js = json.loads(request.data.decode('utf-8'))
+
+    print(js)
+
+
+    return ''
+
+    collection = js['collection'].lower()
+    id = js['_id']
+    covars_changed = js['covars_changed']
+    if not covars_changed:
+        return ''
+    summary_id = int(float(js['summary_id']))
+
+    js.pop('collection', None)
+    js.pop('_id', None)
+    js.pop('covars_changed', None)
+    js['summary_id'] = summary_id
+
+    query = { '_id':  ObjectId(id) }
+    insert = {'$set': js}
+    ret_data = db_papers. \
+        db[collection]. \
+        update_one(query, insert)
+    if (collection == 'data'):
+        query_summary = {'summary_id': summary_id}
+
+        new_lst = []
+        for source in list(db_papers.db['summary'].find(query_summary))[0]['data']:
+            if source['data_source'] == js['data_source']:
+                for covar in covars_changed:
+                    source[covar] = js[covar]
+            new_lst.append(source)
+
+        insert_summary = {'$set': {'data': new_lst}}
+        db_papers.db['summary'].update_one(query_summary, insert_summary)
+
+    elif (collection == 'summary') and ('data' in covars_changed):
+        for source in json.loads(js['data'].replace("'", '"')):
+            query_data = {'summary_id': summary_id, 'data_source': source['data_source']}
+            source['summary_id'] = summary_id
+            insert_data = {'$set': source}
+
+            db_papers.db['data'].update_one(query_data, insert_data)
+
+    print('Data document objects: \n\t{}'.format(ret_data))
+    return ''
 
 def summary_json(form, data_sources):
     data = {
@@ -93,6 +154,12 @@ def summary_json(form, data_sources):
         "data": data_sources,
         "conclusions": form['Conclusions']
     }
+    return data
+
+def document_json(form):
+    data = {}
+    for key in form:
+        data[key] = form[key]
     return data
 
 def data_object_create(form):

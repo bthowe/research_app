@@ -18,23 +18,51 @@
 </head>
 
 <body>
+<nav class="navbar navbar-expand-lg navbar-light bg-light">
+    <a class="navbar-brand" href="#">
+        <img src="{{ url_for('static', filename='iconfinder_Boats_2_753963.png') }}" width="30" height="30"
+             class="d-inline-block align-top" alt="">
+        Eship
+    </a>
+    <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNavAltMarkup"
+            aria-controls="navbarNavAltMarkup" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarNavAltMarkup">
+        <div class="navbar-nav">
+            <li class="nav-item dropdown">
+                <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownMenuLink" data-toggle="dropdown"
+                   aria-haspopup="true" aria-expanded="false">
+                    Data Entry
+                </a>
+                <div class="dropdown-menu" aria-labelledby="navbarDropdownMenuLink">
+                    <a class="dropdown-item" href="/summary">Summary</a>
+                    <a class="dropdown-item" href="/datasets">Datasets</a>
+                </div>
+            </li>
+            <a class="nav-item nav-link" href="/database_viewer">View Database</a>
 
-    <div class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main" id="main">
-        <div class="row" id="dropDownRow">
-            <div class="col-3">
-                <label for="choose_col">Collection</label>
-                <select id="choose_col" class="form-control" onchange=collectionAutoFill()>
-                    <option selected>Choose...</option>
-                    <option>Data</option>
-                    <option>Summary</option>
-                </select>
-            </div>
         </div>
-        <div class="row" id="buttonRow"></div>
-        <div class="row" id="tableRow"></div>
     </div>
+</nav>
+
+<div class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main" id="main">
+    <div class="row" id="dropDownRow">
+        <div class="col-3">
+            <label for="choose_col">Collection</label>
+            <select id="choose_col" class="form-control" onchange=collectionAutoFill()>
+                <option selected>Choose...</option>
+                <option>Data</option>
+                <option>Summary</option>
+            </select>
+        </div>
+    </div>
+    <div class="row" id="buttonRow"></div>
+    <div class="row" id="tableRow"></div>
+</div>
 
 <script>
+    var dbs_original;
     document.getElementById('choose_col').focus();
 
     function clearDivs(submitBool) {
@@ -42,7 +70,6 @@
         {
             if (document.getElementById('submit')) {
                 document.getElementById('submit').remove();
-                document.getElementById('dropDownDiv').remove();
                 document.getElementById('textFieldDiv').remove();
                 document.getElementById('buttonDiv').remove();
             }
@@ -104,6 +131,7 @@
             request.onload = function () {
                 clearDivs(true);
                 var dbs_details = JSON.parse(JSON.stringify(request.response))['items'];
+                dbs_original = dbs_details
                 tableCreate(dbs_details);
                 document.getElementById('choose_col').focus();
             };
@@ -145,6 +173,11 @@
         th.setAttribute("style", "width:50px;");
         tr.appendChild(th);
 
+        var th = document.createElement('th');
+        th.scope = 'col';
+        th.setAttribute("style", "width:90px;");
+        tr.appendChild(th);
+
         for (var k in dbs_details[0]) {
             var th = document.createElement('th');
             th.scope = 'col';
@@ -165,11 +198,29 @@
             th.setAttribute("style", "width:50px;");
             tr.appendChild(th);
 
+            var td = document.createElement('td');
+            td.setAttribute("style", "width:90px; text-align:center;");
+
+            td_but1 = document.createElement('button');
+            td_but1.id = 'but' + i
+            td_but1.onclick = scopepreserverEdit(i, dbs_details)
+            td_but1.innerHTML = "edit";
+            td_but2 = document.createElement('button');
+            td_but2.id = 'but2' + i
+            td_but2.onclick = scopepreserverView(i, dbs_details)
+            td_but2.innerHTML = "view";
+
+            td.appendChild(td_but1);
+            td.appendChild(td_but2);
+            tr.appendChild(td);
+
             for (var k in dbs_details[i]) {
                 var td = document.createElement('td');
+                td.id = k + (i + 1);
                 td.setAttribute("style", "width:305px;");
 
                 td_div = document.createElement('div');
+                td_div.id = 'div' + k + (i + 1);
                 td_div.setAttribute("style", "word-break:break-all;");
                 td_div.innerHTML = dbs_details[i][k];
 
@@ -182,6 +233,78 @@
         table.appendChild(tbody);
         table_div.appendChild(table);
         document.getElementById('tableRow').appendChild(table_div)
+
+    }
+
+    function scopepreserverEdit(i, dbs_details) {
+        return function () {
+            for (var k in dbs_details[i]) {
+                var td = document.getElementById(k + (i + 1));
+                if (k != "_id" && k != "system_id")  {
+                    td.contentEditable = "true"
+                }
+            }
+
+            var td_but = document.getElementById('but' + i);
+            td_but.onclick = scopepreserverUpdate(i, dbs_details)
+            td_but.innerHTML = "update";
+        }
+    }
+
+    function scopepreserverView(i, dbs_details) {
+        return function () {
+            var dbs_e = document.getElementById("choose_col");
+
+            var form = document.createElement('form');
+            form.method = "POST";
+            form.action = "document_view";
+            form.setAttribute("display", "none");
+
+            var input_name = document.createElement('input')
+            input_name.setAttribute("type", "text");
+            input_name.setAttribute("name", 'collection');
+            input_name.value = dbs_e.options[dbs_e.selectedIndex].text;
+            form.appendChild(input_name)
+
+            for (var k in dbs_details[i]) {
+                var input_name = document.createElement('input')
+                input_name.setAttribute("type", "text");
+                input_name.setAttribute("name", k);
+                input_name.value = dbs_details[i][k];
+                form.appendChild(input_name)
+            }
+            document.body.appendChild(form);
+            form.submit();
+        }
+    }
+
+    function scopepreserverUpdate(i, dbs_details) {
+        return function () {
+            var dbs_e = document.getElementById("choose_col");
+
+            new_dict = {'collection': dbs_e.options[dbs_e.selectedIndex].text}
+            changed_dict = []
+            for (var k in dbs_details[i]) {
+                var td = document.getElementById('div' + k + (i + 1));
+                new_dict[k] = td.innerHTML
+
+                if (dbs_original[i][k] != new_dict[k]) {
+                    changed_dict.push(k)
+                }
+            }
+            new_dict['covars_changed'] = changed_dict
+
+            var request = new XMLHttpRequest();
+            request.responseType = 'json';
+            request.open("POST", "/update_db", true);
+            request.onload = function () {
+                var td_but = document.getElementById('but' + i);
+                td_but.onclick = scopepreserverEdit(i, dbs_details)
+                td_but.innerHTML = "edit";
+                console.log('yeah!')
+            };
+            request.send(JSON.stringify(new_dict));
+        }
     }
 
 
@@ -191,3 +314,5 @@
 
 </html>
 
+<!--see the following website for how I had to set the onclick function in order to preserve the scope; I don't completely understand this.-->
+<!--http://www.howtocreate.co.uk/referencedvariables.html-->
