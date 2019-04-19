@@ -1,5 +1,6 @@
 import sys
 import json
+import joblib
 import datetime
 import subprocess
 import pandas as pd
@@ -26,8 +27,15 @@ def summary():
     if request.method == 'POST':
         form = request.form
 
-        data_sources = data_object_create(form)
-        summary = summary_json(form, data_sources)
+
+        import os
+        print(os.getcwd())
+
+
+
+        summary_id = joblib.load('static/summary_id') + 1
+        data_sources = data_object_create(form, summary_id)
+        summary = summary_json(form, data_sources, summary_id)
         print('Summary: {}'.format(summary))
         print('Data Sources: {}'.format(data_sources))
 
@@ -36,11 +44,13 @@ def summary():
             insert_one(summary)
         print('Summary document object: \n\t{}'.format(ret_summary.inserted_id))
 
+        print([v for k, v in data_sources.items()])
         ret_data = db_papers.\
             db['data'].\
-            insert_many(data_sources)
+            insert_many([v for k, v in data_sources.items()])
         print('Data document objects: \n\t{}'.format(ret_data.inserted_ids))
 
+        joblib.dump(summary_id, 'static/summary_id')
         return redirect(url_for('summary'))
     return render_template('summary.html')
 
@@ -69,6 +79,7 @@ def document_view():
     form = request.form
 
     document = document_json(form)
+    print(document)
 
     if form['collection'] == 'Data':
         return render_template('data_document_view.html', doc=document, page_name='Document View')
@@ -97,11 +108,6 @@ def query_db():
 @app.route('/update_db', methods=['POST'])
 def update_db():
     js = json.loads(request.data.decode('utf-8'))
-
-    print(js)
-
-
-    return ''
 
     collection = js['collection'].lower()
     id = js['_id']
@@ -144,7 +150,7 @@ def update_db():
     print('Data document objects: \n\t{}'.format(ret_data))
     return ''
 
-def summary_json(form, data_sources):
+def summary_json(form, data_sources, summary_id):
     data = {
         "citation": form['Citation'],
         "date_added": str(datetime.datetime.today()),
@@ -152,7 +158,8 @@ def summary_json(form, data_sources):
         "t_model": form['Theoretical Model'],
         "e_model": form['Empirical Approach'],
         "data": data_sources,
-        "conclusions": form['Conclusions']
+        "conclusions": form['Conclusions'],
+        "summary_id": summary_id
     }
     return data
 
@@ -162,9 +169,9 @@ def document_json(form):
         data[key] = form[key]
     return data
 
-def data_object_create(form):
+def data_object_create(form, summary_id):
     num_data_sources = int((len(list(form.keys())) - 5) / 3)
-    return [{"data_source": form['Data_source' + str(i)], "outcomes": form['Outcomes' + str(i)], "covariates": form['Covariates' + str(i)]} for i in range(num_data_sources)]
+    return {'source_{}'.format(i): {"data_source": form['Data_source' + str(i)], "outcomes": form['Outcomes' + str(i)], "covariates": form['Covariates' + str(i)], "summary_id": summary_id} for i in range(num_data_sources)}
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=8000, debug=True)

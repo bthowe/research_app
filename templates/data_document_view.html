@@ -45,6 +45,7 @@
 
         </div>
     </div>
+    <a class="nav-item nav-link" href="/quit">Quit</a>
 </nav>
 <div class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main">
     <div class="form-row">
@@ -151,7 +152,6 @@
             request.onload = function () {
                 Viewer()
                 document.getElementById('viewButton').autofocus=true;
-                <!--'autofocus'-->
             };
             request.send(JSON.stringify(new_dict));
         }

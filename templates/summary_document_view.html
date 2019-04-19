@@ -44,6 +44,7 @@
 
         </div>
     </div>
+    <a class="nav-item nav-link" href="/quit">Quit</a>
 </nav>
 <div class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main">
     <div class="form-row">
@@ -66,7 +67,9 @@
 </div>
 </body>
 <script>
-    doc = {{ doc| tojson }};
+    var data_length;
+
+    var doc = {{ doc| tojson }};
 
     sub_title = document.getElementById("sub_title");
     sub_title.innerHTML = '(record number: ' + doc['_id'] + ')'
@@ -83,7 +86,7 @@
         document.getElementById("main").appendChild(main_div)
     }
 
-    function tableCreate(data, editable) {
+    function tableCreate(index, data, editable) {
         var table_row_div = document.createElement("div");
         table_row_div.className = 'row';
         var table_col_div = document.createElement('div');
@@ -111,6 +114,7 @@
             var td2 = document.createElement('td');
             td2.className = "col-9";
             td2.innerText = data[k];
+            td2.id = k + index
 
             if (editable) {
                 td2.contentEditable = "true";
@@ -158,7 +162,8 @@
         }
         else {
             data = JSON.parse(words.replace(/'/g, '"'))
-            for (var i = 0; i < data.length; i++) {
+            data_length = data.length
+            for (var i = 0; i < data_length; i++) {
                 var element_row_div = document.createElement("div");
                 element_row_div.className = 'row';
                 var element_col_div = document.createElement("div");
@@ -175,7 +180,7 @@
                 subtitle_row_div.appendChild(subtitle_col_div)
                 element_col_div.appendChild(subtitle_row_div)
 
-                element_col_div.appendChild(tableCreate(data[i], editable))
+                element_col_div.appendChild(tableCreate(i, data[i], editable))
 
                 element_row_div.appendChild(element_col_div)
                 main_div.appendChild(element_row_div)
@@ -200,12 +205,24 @@
         but.className = 'btn btn-primary';
         but.innerHTML = 'Update';
         but.onclick = function() {
-            <!--new_dict = {'collection': doc['collection']}-->
             new_dict = {'collection': doc['collection']}
             changed_dict = []
             for (var k in doc) {
-                if (['collection', '_id', 'summary_id'].includes(k)) {
+                if (['collection', '_id', 'summary_id', 'date_added'].includes(k)) {
                     new_dict[k] = doc[k]
+                }
+                else if (k == 'data') {
+                    data_array = []
+                    for (var i = 0; i < data_length; i++) {
+                        data_array.push(
+                            {
+                                'data_source': document.getElementById('data_source' + i).innerText,
+                                'covariates': document.getElementById('covariates' + i).innerText,
+                                'outcomes': document.getElementById('outcomes' + i).innerText
+                            }
+                        )
+                    }
+                    new_dict[k] = data_array
                 }
                 else {
                     var p = document.getElementById(k);
@@ -222,6 +239,10 @@
             request.responseType = 'json';
             request.open("POST", "/update_db", true);
             request.onload = function () {
+                doc = new_dict;
+                delete doc['covars_changed'];
+                doc['data'] = JSON.stringify(doc['data'])
+
                 Viewer()
                 document.getElementById('viewButton').autofocus=true;
             };
