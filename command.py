@@ -27,12 +27,6 @@ def summary():
     if request.method == 'POST':
         form = request.form
 
-
-        import os
-        print(os.getcwd())
-
-
-
         summary_id = joblib.load('static/summary_id') + 1
         data_sources = data_object_create(form, summary_id)
         summary = summary_json(form, data_sources, summary_id)
@@ -44,10 +38,10 @@ def summary():
             insert_one(summary)
         print('Summary document object: \n\t{}'.format(ret_summary.inserted_id))
 
-        print([v for k, v in data_sources.items()])
+        print([source for source in data_sources])
         ret_data = db_papers.\
             db['data'].\
-            insert_many([v for k, v in data_sources.items()])
+            insert_many([source for source in data_sources])
         print('Data document objects: \n\t{}'.format(ret_data.inserted_ids))
 
         joblib.dump(summary_id, 'static/summary_id')
@@ -102,8 +96,16 @@ def query_db():
     docs = []
     docs += list(db_papers.db[collection].find({}))
 
-    return jsonify(items=[{str(k): str(v) for k, v in doc.items()} for doc in docs])
-
+    payload = []
+    for doc in docs:
+        document_dict = {}
+        for k, v in doc.items():
+            if k == '_id':
+                document_dict[str(k)] = str(v)
+            else:
+                document_dict[str(k)] = v
+        payload.append(document_dict)
+    return jsonify(items=payload)
 
 @app.route('/update_db', methods=['POST'])
 def update_db():
@@ -166,12 +168,23 @@ def summary_json(form, data_sources, summary_id):
 def document_json(form):
     data = {}
     for key in form:
-        data[key] = form[key]
+        if key == 'data':
+            data_lst = []
+            for data_string in form['data'][1:-1].split('},{'):
+                if data_string[0] != '{':
+                    data_string = '{' + data_string
+                if data_string[-1] != '}':
+                    data_string = data_string + '}'
+                data_lst.append(json.loads(data_string))
+            data[key] = data_lst
+        else:
+            data[key] = form[key]
     return data
 
 def data_object_create(form, summary_id):
     num_data_sources = int((len(list(form.keys())) - 5) / 3)
-    return {'source_{}'.format(i): {"data_source": form['Data_source' + str(i)], "outcomes": form['Outcomes' + str(i)], "covariates": form['Covariates' + str(i)], "summary_id": summary_id} for i in range(num_data_sources)}
+    return [{"data_source": form['Data_source' + str(i)], "outcomes": form['Outcomes' + str(i)], "covariates": form['Covariates' + str(i)], "summary_id": summary_id} for i in range(num_data_sources)]
+
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=8000, debug=True)

@@ -209,6 +209,7 @@
             td_but2 = document.createElement('button');
             td_but2.id = 'but2' + i
             td_but2.onclick = scopepreserverView(i, dbs_details)
+
             td_but2.innerHTML = "view";
 
             td.appendChild(td_but1);
@@ -223,7 +224,13 @@
                 td_div = document.createElement('div');
                 td_div.id = 'div' + k + (i + 1);
                 td_div.setAttribute("style", "word-break:break-all;");
-                td_div.innerHTML = dbs_details[i][k];
+
+                if (k == "data") {
+                    td_div.innerHTML = JSON.stringify(dbs_details[i][k]);
+                }
+                else {
+                    td_div.innerHTML = dbs_details[i][k];
+                }
 
                 td.appendChild(td_div);
                 tr.appendChild(td);
@@ -271,7 +278,15 @@
                 var input_name = document.createElement('input')
                 input_name.setAttribute("type", "text");
                 input_name.setAttribute("name", k);
-                input_name.value = dbs_details[i][k];
+
+                if (k == "data") {
+                    input_name.value = JSON.stringify(dbs_details[i][k]);
+                }
+                else {
+                    input_name.value = dbs_details[i][k];
+                }
+                <!--input_name.value = dbs_details[i][k];-->
+
                 form.appendChild(input_name)
             }
             document.body.appendChild(form);

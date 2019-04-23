@@ -5,12 +5,6 @@ The app is run using the bash script "run.sh".
 After killing the server, the script backs up the database and then terminates mongod.    
 
 todo
-1. Something seems to still be messed up with the summary_id numbering
-2. get to the bottom of why some document viewers aren't rendering the data and conclusions
-    1. has to do with a string being sent in and not a dictionary.
-    2. In line 105 in command.py, I'm stringing everything. I can't do that.
-3. clean up the database and make sure every row works in the document viewer
-
 2. button that returns to previous query in table_viewer
     1. put a button in the navbar next to "View Database"
     2. I have the collection name already.
