@@ -1,4 +1,4 @@
-source ~/VirtualEnvironments/howeschool_app/bin/activate
+source ~/VirtualEnvironments/flask_apps/bin/activate
 
 mongod --fork --logpath db_backup/mongo_log/mongod.log
 open -a "Google Chrome" http://0.0.0.0:8001/summary

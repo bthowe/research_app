@@ -38,11 +38,12 @@ def summary():
             insert_one(summary)
         print('Summary document object: \n\t{}'.format(ret_summary.inserted_id))
 
-        print([source for source in data_sources])
-        ret_data = db_papers.\
-            db['data'].\
-            insert_many([source for source in data_sources])
-        print('Data document objects: \n\t{}'.format(ret_data.inserted_ids))
+        data_lst = [source for source in data_sources]
+        if not ((len(data_lst) == 1) and (data_lst[0]['data_source'] == 'None')):
+            ret_data = db_papers.\
+                db['data'].\
+                insert_many([source for source in data_sources])
+            print('Data document objects: \n\t{}'.format(ret_data.inserted_ids))
 
         joblib.dump(summary_id, 'static/summary_id')
         return redirect(url_for('summary'))
@@ -73,7 +74,6 @@ def document_view():
     form = request.form
 
     document = document_json(form)
-    print(document)
 
     if form['collection'] == 'Data':
         return render_template('data_document_view.html', doc=document, page_name='Document View')
@@ -114,20 +114,23 @@ def update_db():
     collection = js['collection'].lower()
     id = js['_id']
     covars_changed = js['covars_changed']
-    if not covars_changed:
-        return ''
     summary_id = int(float(js['summary_id']))
 
-    js.pop('collection', None)
-    js.pop('_id', None)
     js.pop('covars_changed', None)
     js['summary_id'] = summary_id
 
-    query = { '_id':  ObjectId(id) }
-    insert = {'$set': js}
+    if not covars_changed:
+        return jsonify(js)
+
+    js_to_insert = js.copy()
+    js_to_insert.pop('collection', None)
+    js_to_insert.pop('_id', None)
+    query = {'_id':  ObjectId(id)}
+    insert = {'$set': js_to_insert}
     ret_data = db_papers. \
         db[collection]. \
         update_one(query, insert)
+
     if (collection == 'data'):
         query_summary = {'summary_id': summary_id}
 
@@ -142,15 +145,14 @@ def update_db():
         db_papers.db['summary'].update_one(query_summary, insert_summary)
 
     elif (collection == 'summary') and ('data' in covars_changed):
-        for source in json.loads(js['data'].replace("'", '"')):
+        for source in js['data']:
             query_data = {'summary_id': summary_id, 'data_source': source['data_source']}
             source['summary_id'] = summary_id
             insert_data = {'$set': source}
-
             db_papers.db['data'].update_one(query_data, insert_data)
 
     print('Data document objects: \n\t{}'.format(ret_data))
-    return ''
+    return jsonify(js)
 
 def summary_json(form, data_sources, summary_id):
     data = {

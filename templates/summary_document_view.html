@@ -15,6 +15,9 @@
 
     <!-- Latest compiled JavaScript -->
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
+
+    <!--Lo dash package-->
+    <script src="https://cdn.jsdelivr.net/npm/lodash@4.17.10/lodash.min.js"></script>
 </head>
 
 <body>
@@ -64,12 +67,9 @@
         <div class="col-12" id="mainDiv">
         </div>
     </div>
-</div>
-</body>
-<script>
-    var data_length;
-
+    <script>
     var doc = {{ doc| tojson }};
+    var data_length = doc['data'].length;
 
     sub_title = document.getElementById("sub_title");
     sub_title.innerHTML = '(record number: ' + doc['_id'] + ')'
@@ -162,7 +162,6 @@
         }
         else {
             data = words
-            data_length = data.length
             for (var i = 0; i < data_length; i++) {
                 var element_row_div = document.createElement("div");
                 element_row_div.className = 'row';
@@ -185,6 +184,44 @@
                 element_row_div.appendChild(element_col_div)
                 main_div.appendChild(element_row_div)
             }
+            if (editable) {
+                var more_button_row = document.createElement("div");
+                more_button_row.className='row';
+                more_button_row.id = 'more_button_row';
+
+                var more_button_col = document.createElement("div");
+                more_button_col.className='col-1 pt-2';
+                var more_button = document.createElement("button");
+                more_button.className='btn btn-primary';
+                more_button.innerHTML = '+';
+                more_button.onclick = function() {
+                    MoreData(data_length + 1)
+                    data_length += 1;
+                    if (data_length > 1) {
+                        document.getElementById('less_button').style.visibility = "visible";
+                    }
+                }
+                more_button_col.append(more_button)
+
+                var less_button_col = document.createElement("div");
+                less_button_col.className='col-1 pt-2';
+                var less_button = document.createElement("button");
+                less_button.className='btn btn-primary';
+                less_button.innerHTML = '-';
+                less_button.id = 'less_button';
+                less_button.onclick = function() {
+                    document.getElementById("source" + data_length).remove();
+                    data_length -= 1;
+                    if (data_length == 1) {
+                        document.getElementById('less_button').style.visibility = "hidden";
+                    }
+                }
+                less_button_col.append(less_button)
+
+                more_button_row.append(more_button_col)
+                more_button_row.append(less_button_col)
+                main_div.append(more_button_row)
+            }
         }
     }
     function Viewer() {
@@ -198,6 +235,33 @@
         SectionConstructor('Empirical Approach', 'e_model', doc['e_model'], false)
         SectionConstructor('Data', 'data', doc['data'], false)
         SectionConstructor('Conclusions', 'conclusions', doc['conclusions'], false)
+    }
+
+    function MoreData(i) {
+        var main_div = document.getElementById("mainDiv");
+        var more_button_row = document.getElementById("more_button_row");
+
+        var element_row_div = document.createElement("div");
+        element_row_div.className = 'row';
+        element_row_div.id = 'source' + i;
+        var element_col_div = document.createElement("div");
+        element_col_div.className = 'col-12';
+
+        var subtitle_row_div = document.createElement("div");
+        subtitle_row_div.className = 'row';
+        var subtitle_col_div = document.createElement("div");
+        subtitle_col_div.className = 'col-12 pt-2';
+        var h = document.createElement('h6');
+        h.innerHTML = 'Source ' + (i)
+
+        subtitle_col_div.appendChild(h)
+        subtitle_row_div.appendChild(subtitle_col_div)
+        element_col_div.appendChild(subtitle_row_div)
+
+        element_col_div.appendChild(tableCreate(i, {"covariates": "", "data_source": "", "outcomes": ""}, true))
+
+        element_row_div.appendChild(element_col_div)
+        main_div.insertBefore(element_row_div, more_button_row)
     }
 
     function ButtonCreate() {
@@ -223,6 +287,11 @@
                         )
                     }
                     new_dict[k] = data_array
+
+                    if (!(_.isEqual(doc[k], new_dict[k]))) {
+                        changed_dict.push(k)
+                    }
+
                 }
                 else {
                     var p = document.getElementById(k);
@@ -239,9 +308,7 @@
             request.responseType = 'json';
             request.open("POST", "/update_db", true);
             request.onload = function () {
-                doc = new_dict;
-                delete doc['covars_changed'];
-                doc['data'] = JSON.stringify(doc['data'])
+                doc = request.response;
 
                 Viewer()
                 document.getElementById('viewButton').autofocus=true;
@@ -266,11 +333,16 @@
         SectionConstructor('Objective', 'objective', doc['objective'], true)
         SectionConstructor('Theoretical Model', 't_model', doc['t_model'], true)
         SectionConstructor('Empirical Approach', 'e_model', doc['e_model'], true)
+
         SectionConstructor('Data', 'data', doc['data'], true)
+        document.getElementById('less_button').style.visibility = "hidden";
+
         SectionConstructor('Conclusions', 'conclusions', doc['conclusions'], true)
         ButtonCreate()
         document.getElementById('citation').focus();
     }
 
 </script>
+</div>
+</body>
 </html>
